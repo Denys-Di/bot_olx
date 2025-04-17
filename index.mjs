@@ -1,5 +1,6 @@
 import TelegramBot from 'node-telegram-bot-api';
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
+import { launch } from 'chrome-aws-lambda';
 import http from 'http';
 
 const token = process.env.TOKEN;
@@ -13,50 +14,61 @@ const categories = {
 };
 
 async function searchOLX(query, minPrice, maxPrice) {
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    executablePath: puppeteer.executablePath(),
-  });
+  let browser;
 
-  const page = await browser.newPage();
-
-  let searchUrl = `https://www.olx.ua/uk/list/?search[order]=created_at:desc&q=${encodeURIComponent(query)}`;
-  if (minPrice) searchUrl += `&search[filter_float_price:from]=${minPrice}`;
-  if (maxPrice) searchUrl += `&search[filter_float_price:to]=${maxPrice}`;
-
-  await page.goto(searchUrl, { waitUntil: 'networkidle0' });
-  await new Promise(resolve => setTimeout(resolve, 3000));
-
-  const results = await page.evaluate(() => {
-    const items = [];
-    const cards = document.querySelectorAll('div[data-cy="l-card"]');
-
-    cards.forEach((el, i) => {
-      if (i >= 20) return;
-
-      const titleEl = el.querySelector('h6') || el.querySelector('h6 span');
-      const title = titleEl?.innerText || '—';
-
-      const priceEl = el.querySelector('[data-testid="ad-price"]');
-      const price = priceEl?.innerText || 'Ціна не вказана';
-
-      const linkEl = el.querySelector('a');
-      const link = linkEl?.href || '#';
-
-      const imgEl = el.querySelector('img');
-      const image = imgEl?.src || null;
-
-      if (title && link) {
-        items.push({ title, price, link, image });
-      }
+  try {
+    browser = await launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      defaultViewport: { width: 1280, height: 720 },
+      executablePath: await launch().executablePath,
+      headless: true,
     });
 
-    return items;
-  });
+    const page = await browser.newPage();
 
-  await browser.close();
-  return results;
+    let searchUrl = `https://www.olx.ua/uk/list/?search[order]=created_at:desc&q=${encodeURIComponent(query)}`;
+    if (minPrice) searchUrl += `&search[filter_float_price:from]=${minPrice}`;
+    if (maxPrice) searchUrl += `&search[filter_float_price:to]=${maxPrice}`;
+
+    await page.goto(searchUrl, { waitUntil: 'networkidle0' });
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    const results = await page.evaluate(() => {
+      const items = [];
+      const cards = document.querySelectorAll('div[data-cy="l-card"]');
+
+      cards.forEach((el, i) => {
+        if (i >= 20) return;
+
+        const titleEl = el.querySelector('h6') || el.querySelector('h6 span');
+        const title = titleEl?.innerText || '—';
+
+        const priceEl = el.querySelector('[data-testid="ad-price"]');
+        const price = priceEl?.innerText || 'Ціна не вказана';
+
+        const linkEl = el.querySelector('a');
+        const link = linkEl?.href || '#';
+
+        const imgEl = el.querySelector('img');
+        const image = imgEl?.src || null;
+
+        if (title && link) {
+          items.push({ title, price, link, image });
+        }
+      });
+
+      return items;
+    });
+
+    return results;
+  } catch (error) {
+    console.error('Помилка під час пошуку на OLX:', error);
+    throw error;
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
+  }
 }
 
 bot.on('message', async (msg) => {
