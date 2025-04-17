@@ -1,11 +1,17 @@
 import TelegramBot from 'node-telegram-bot-api';
 import puppeteer from 'puppeteer-core';
-import chromium from 'chrome-aws-lambda'; // Імпортуємо модуль за замовчуванням
+import chromium from 'chrome-aws-lambda';
 import http from 'http';
+import express from 'express'; // Додаємо express для зручної обробки Webhook
 
 const token = process.env.TOKEN;
-const bot = new TelegramBot(token, { polling: true });
+const app = express();
+app.use(express.json()); // Middleware для парсингу JSON-тіла запитів
+
+const bot = new TelegramBot(token);
 const userStates = {};
+const webhookPath = '/webhook';
+const webhookURL = process.env.RENDER_EXTERNAL_URL ? `${process.env.RENDER_EXTERNAL_URL}${webhookPath}` : '';
 
 const categories = {
   '📱 Телефони': 'телефон',
@@ -17,7 +23,7 @@ async function searchOLX(query, minPrice, maxPrice) {
   let browser;
 
   try {
-    browser = await chromium.launch({ // Використовуємо chromium.launch
+    browser = await chromium.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
       executablePath: await chromium.executablePath,
@@ -57,7 +63,7 @@ async function searchOLX(query, minPrice, maxPrice) {
         }
       });
 
-      return results;
+      return items;
     });
 
     return results;
@@ -159,8 +165,27 @@ bot.on('message', async (msg) => {
   return bot.sendMessage(chatId, 'Напишіть /start, щоб розпочати 🔁');
 });
 
-// Фіктивний сервер для Render (необхідний для Web Service)
-http.createServer((req, res) => {
-  res.writeHead(200);
-  res.end('Bot is running!');
-}).listen(process.env.PORT || 3000);
+// Встановлення Webhook, якщо запущено на Render
+if (webhookURL) {
+  bot.setWebhook(webhookURL).then(() => {
+    console.log(`Webhook встановлено на: ${webhookURL}`);
+  }).catch(error => {
+    console.error('Помилка встановлення Webhook:', error);
+  });
+} else {
+  // Якщо не на Render, використовуємо Long Polling (для локального тестування)
+  bot.startPolling();
+  console.log('Використовується Long Polling');
+}
+
+// Обробка POST-запитів на Webhook-ендпойнт
+app.post(webhookPath, (req, res) => {
+  bot.processUpdate(req.body);
+  res.sendStatus(200);
+});
+
+// Стартуємо Express-сервер
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Сервер запущено на порту ${port}`);
+});
