@@ -16,7 +16,7 @@ async function searchOLX(query, minPrice, maxPrice) {
   const browser = await puppeteer.launch({
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    // executablePath: '/opt/render/.cache/puppeteer/chrome/linux-135.0.7049.84/chrome-linux64/chrome' 
+    executablePath: puppeteer.executablePath(),
   });
 
   const page = await browser.newPage();
