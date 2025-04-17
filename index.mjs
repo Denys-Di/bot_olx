@@ -7,9 +7,9 @@ const bot = new TelegramBot(token, { polling: true });
 const userStates = {};
 
 const categories = {
-  '📱 Телефони': 'телефон',
-  '💻 Ноутбуки': 'ноутбук',
-  '🎧 Навушники': 'навушники'
+  '📱 Телефони!': 'телефон',
+  '💻 Ноутбуки!': 'ноутбук',
+  '🎧 Навушники!': 'навушники'
 };
 
 async function searchOLX(query, minPrice, maxPrice) {
