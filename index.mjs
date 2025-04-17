@@ -7,15 +7,15 @@ const bot = new TelegramBot(token, { polling: true });
 const userStates = {};
 
 const categories = {
-  '📱 Телефони!': 'телефон',
-  '💻 Ноутбуки!': 'ноутбук',
-  '🎧 Навушники!': 'навушники'
+  '📱 Телефони': 'телефон',
+  '💻 Ноутбуки': 'ноутбук',
+  '🎧 Навушники': 'навушники'
 };
 
 async function searchOLX(query, minPrice, maxPrice) {
   const browser = await puppeteer.launch({
-  headless: true,
-  args: ['--no-sandbox', '--disable-setuid-sandbox']
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
 
   const page = await browser.newPage();
@@ -63,6 +63,8 @@ bot.on('message', async (msg) => {
   const text = msg.text;
   const state = userStates[chatId] || {};
 
+  console.log(`Отримано повідомлення від ${chatId}: "${text}", поточний стан:`, state);
+
   if (text === '/start') {
     userStates[chatId] = { stage: 'choose_category' };
     return bot.sendMessage(chatId, 'Оберіть категорію:', {
@@ -77,6 +79,7 @@ bot.on('message', async (msg) => {
   }
 
   if (categories[text]) {
+    console.log(`Користувач ${chatId} обрав категорію: "${text}" (${categories[text]})`);
     userStates[chatId] = {
       stage: 'enter_keyword',
       category: categories[text],
@@ -116,24 +119,15 @@ bot.on('message', async (msg) => {
 
       if (results.length > 0) {
         for (const item of results) {
+          const message = `📌 *${item.title}*\n💵 *${item.price}*\n🔗 [Переглянути на OLX](${item.link})`;
           if (item.image) {
             await bot.sendPhoto(chatId, item.image, {
-              caption: `📌 *${item.title}*\n💵 *${item.price}*`,
-              parse_mode: 'Markdown',
-              reply_markup: {
-                inline_keyboard: [[
-                  { text: '🔗 Переглянути на OLX', url: item.link }
-                ]]
-              }
+              caption: message,
+              parse_mode: 'Markdown'
             });
           } else {
-            await bot.sendMessage(chatId, `📌 *${item.title}*\n💵 *${item.price}*`, {
-              parse_mode: 'Markdown',
-              reply_markup: {
-                inline_keyboard: [[
-                  { text: '🔗 Переглянути на OLX', url: item.link }
-                ]]
-              }
+            await bot.sendMessage(chatId, message, {
+              parse_mode: 'Markdown'
             });
           }
         }
