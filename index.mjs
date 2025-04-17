@@ -3,7 +3,6 @@ import puppeteer from 'puppeteer-core';
 import chromium from 'chrome-aws-lambda';
 import http from 'http';
 import express from 'express'; // Додаємо express для зручної обробки Webhook
-import fetch from 'node-fetch'; // Для ручного налаштування Webhook
 
 const token = process.env.TOKEN;
 const app = express();
@@ -13,9 +12,6 @@ const bot = new TelegramBot(token);
 const userStates = {};
 const webhookPath = '/webhook';
 const webhookURL = process.env.RENDER_EXTERNAL_URL ? `${process.env.RENDER_EXTERNAL_URL}${webhookPath}` : '';
-
-// Логування URL для перевірки
-console.log('Webhook URL:', webhookURL);
 
 const categories = {
   '📱 Телефони': 'телефон',
@@ -27,11 +23,12 @@ async function searchOLX(query, minPrice, maxPrice) {
   let browser;
 
   try {
-    browser = await chromium.launch({
+    // Запускаємо Chromium через puppeteer та chrome-aws-lambda
+    browser = await puppeteer.launch({
       args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
       executablePath: await chromium.executablePath,
-      headless: true,
+      headless: chromium.headless,
+      defaultViewport: chromium.defaultViewport,
     });
 
     const page = await browser.newPage();
@@ -171,19 +168,11 @@ bot.on('message', async (msg) => {
 
 // Встановлення Webhook, якщо запущено на Render
 if (webhookURL) {
-  // Спроба налаштування через fetch
-  fetch(`https://api.telegram.org/bot${token}/setWebhook?url=${webhookURL}`)
-    .then(response => response.json())
-    .then(data => {
-      if (data.ok) {
-        console.log(`Webhook встановлено на: ${webhookURL}`);
-      } else {
-        console.error('Помилка встановлення Webhook:', data.description);
-      }
-    })
-    .catch(error => {
-      console.error('Помилка при встановленні Webhook:', error);
-    });
+  bot.setWebhook(webhookURL).then(() => {
+    console.log(`Webhook встановлено на: ${webhookURL}`);
+  }).catch(error => {
+    console.error('Помилка встановлення Webhook:', error);
+  });
 } else {
   // Якщо не на Render, використовуємо Long Polling (для локального тестування)
   bot.startPolling();
