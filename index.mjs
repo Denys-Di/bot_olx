@@ -31,7 +31,7 @@ async function searchOLX(query, minPrice, maxPrice) {
     const cards = document.querySelectorAll('div[data-cy="l-card"]');
 
     cards.forEach((el, i) => {
-      if (i >= 5) return;
+      if (i >= 20) return;
 
       const titleEl = el.querySelector('h6') || el.querySelector('h6 span');
       const title = titleEl?.innerText || '—';
