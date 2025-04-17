@@ -1,6 +1,7 @@
 import TelegramBot from 'node-telegram-bot-api';
 import puppeteer from 'puppeteer-core';
-import { launch } from 'chrome-aws-lambda';
+import chromium from 'chrome-aws-lambda';
+const { launch } = chromium;
 import http from 'http';
 
 const token = process.env.TOKEN;
@@ -18,9 +19,9 @@ async function searchOLX(query, minPrice, maxPrice) {
 
   try {
     browser = await launch({
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      defaultViewport: { width: 1280, height: 720 },
-      executablePath: await launch().executablePath,
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath,
       headless: true,
     });
 
