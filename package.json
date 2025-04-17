@@ -13,6 +13,6 @@
     "puppeteer": "^24.6.1"
   },
   "puppeteer": {
-    "default_browser_revision": "1127921"
+    "skip_download": true
   }
 }

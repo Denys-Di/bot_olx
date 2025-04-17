@@ -14,9 +14,11 @@ const categories = {
 
 async function searchOLX(query, minPrice, maxPrice) {
   const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'] // потрібно для Render
+  headless: true,
+  executablePath: '/usr/bin/chromium-browser',
+  args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
+
   const page = await browser.newPage();
 
   let searchUrl = `https://www.olx.ua/uk/list/?search[order]=created_at:desc&q=${encodeURIComponent(query)}`;
