@@ -1,6 +1,6 @@
 import TelegramBot from 'node-telegram-bot-api';
 import puppeteer from 'puppeteer-core';
-const { launch } = require('chrome-aws-lambda');
+import chromium from 'chrome-aws-lambda'; // Імпортуємо модуль за замовчуванням
 import http from 'http';
 
 const token = process.env.TOKEN;
@@ -17,10 +17,10 @@ async function searchOLX(query, minPrice, maxPrice) {
   let browser;
 
   try {
-    browser = await launch({
-      args: require('chrome-aws-lambda').args,
-      defaultViewport: require('chrome-aws-lambda').defaultViewport,
-      executablePath: await require('chrome-aws-lambda').executablePath,
+    browser = await chromium.launch({ // Використовуємо chromium.launch
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath,
       headless: true,
     });
 
@@ -57,7 +57,7 @@ async function searchOLX(query, minPrice, maxPrice) {
         }
       });
 
-      return items;
+      return results;
     });
 
     return results;
