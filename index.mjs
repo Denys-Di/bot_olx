@@ -1,11 +1,11 @@
 import TelegramBot from 'node-telegram-bot-api';
 import puppeteer from 'puppeteer';
+import http from 'http';
 
-const token = process.env.TOKEN; // ← токен читається з середовища
+const token = process.env.TOKEN;
 const bot = new TelegramBot(token, { polling: true });
 const userStates = {};
 
-// Категорії з гнучким пошуком
 const categories = {
   '📱 Телефони': 'телефон',
   '💻 Ноутбуки': 'ноутбук',
@@ -15,7 +15,7 @@ const categories = {
 async function searchOLX(query, minPrice, maxPrice) {
   const browser = await puppeteer.launch({
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'] // потрібне для Render
+    args: ['--no-sandbox', '--disable-setuid-sandbox'] // потрібно для Render
   });
   const page = await browser.newPage();
 
@@ -92,7 +92,7 @@ bot.on('message', async (msg) => {
       stage: 'enter_price',
       keyword: text
     };
-    return bot.sendMessage(chatId, '💰 Введіть діапазон ціни у форматі: `2000-8000` (або натисніть Enter, щоб пропустити)', {
+    return bot.sendMessage(chatId, '💰 Введіть діапазон ціни у форматі: `2000-8000`\n(або натисніть Enter, щоб пропустити)', {
       parse_mode: 'Markdown'
     });
   }
@@ -150,3 +150,9 @@ bot.on('message', async (msg) => {
 
   return bot.sendMessage(chatId, 'Напишіть /start, щоб розпочати 🔁');
 });
+
+// Фіктивний сервер для Render (необхідний для Web Service)
+http.createServer((req, res) => {
+  res.writeHead(200);
+  res.end('Bot is running!');
+}).listen(process.env.PORT || 3000);
