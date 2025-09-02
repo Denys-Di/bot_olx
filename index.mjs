@@ -2,6 +2,8 @@ import TelegramBot from 'node-telegram-bot-api';
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 import express from 'express';
+import 'dotenv/config';
+
 
 // --- КОНФІГУРАЦІЯ ---
 const token = process.env.TOKEN;
